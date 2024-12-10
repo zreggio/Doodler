@@ -22,7 +22,8 @@ User Guide:
 5. Change background color.
 6. Clear the canvas.
 7. Draw directly on the canvas in real-time.
-8. Save button functionality can be implemented as needed.
+8. Press the save button to save current drawing, the clear button will no longer clear work past this point.
+9. Press Clear All button to clear all work, including past saved work.
 
 Resources Used:
 https://kotlinlang.org/docs/home.html
