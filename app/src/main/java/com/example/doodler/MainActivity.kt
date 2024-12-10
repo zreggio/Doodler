@@ -31,12 +31,13 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun DoodleScreen() {
-    // State for brush settings
     var brushColor by remember { mutableStateOf(Color.Black) }
     var brushSize by remember { mutableStateOf(8f) }
     var backgroundColor by remember { mutableStateOf(Color.White) }
 
+    // Paths state management
     val paths = remember { mutableStateListOf<DoodlePath>() }
+    val savedPaths = remember { mutableStateListOf<DoodlePath>() }
     val currentPath = remember { mutableStateOf<DoodlePath?>(null) }
 
     Scaffold(
@@ -47,8 +48,15 @@ fun DoodleScreen() {
                 brushSize = brushSize,
                 onBrushSizeChange = { brushSize = it },
                 onClearCanvas = {
+                    paths.clear() // Clears unsaved paths only
+                },
+                onClearAll = {
                     paths.clear()
-                    currentPath.value = null
+                    savedPaths.clear() // Clears everything
+                },
+                onSaveCanvas = {
+                    savedPaths.addAll(paths) // Save all unsaved paths
+                    paths.clear() // Move to saved paths
                 },
                 backgroundColor = backgroundColor,
                 onBackgroundColorChange = { backgroundColor = it }
@@ -65,6 +73,7 @@ fun DoodleScreen() {
                     .fillMaxSize()
                     .background(backgroundColor),
                 paths = paths,
+                savedPaths = savedPaths,
                 currentPath = currentPath,
                 brushColor = brushColor,
                 brushSize = brushSize
@@ -80,6 +89,8 @@ fun ToolPanel(
     brushSize: Float,
     onBrushSizeChange: (Float) -> Unit,
     onClearCanvas: () -> Unit,
+    onClearAll: () -> Unit,
+    onSaveCanvas: () -> Unit,
     backgroundColor: Color,
     onBackgroundColorChange: (Color) -> Unit,
 ) {
@@ -147,20 +158,42 @@ fun ToolPanel(
                     }
                 }
             }
+        }
 
-            Row {
-                Button(onClick = onClearCanvas) {
-                    Text("Clear")
-                }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Button(onClick = onSaveCanvas) {
+                Text("Save")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = onClearCanvas) {
+                Text("Clear")
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Button(onClick = onClearAll) {
+                Text("Clear All")
             }
         }
     }
 }
 
+
+
 @Composable
 fun DoodleCanvas(
     modifier: Modifier,
     paths: MutableList<DoodlePath>,
+    savedPaths: List<DoodlePath>,
     currentPath: MutableState<DoodlePath?>,
     brushColor: Color,
     brushSize: Float
@@ -187,6 +220,16 @@ fun DoodleCanvas(
             )
         }
     ) {
+        // Draw saved paths
+        savedPaths.forEach { doodlePath ->
+            drawPath(
+                path = doodlePath.path,
+                color = doodlePath.color,
+                style = Stroke(width = doodlePath.size)
+            )
+        }
+
+        // Draw current unsaved paths
         paths.forEach { doodlePath ->
             drawPath(
                 path = doodlePath.path,
@@ -195,6 +238,7 @@ fun DoodleCanvas(
             )
         }
 
+        // Draw the path being actively drawn
         currentPath.value?.let { doodlePath ->
             drawPath(
                 path = doodlePath.path,
